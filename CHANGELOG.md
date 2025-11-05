@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0] - 2025-11-05
+
+### Added
+- **Kotlin-style nested modules in `r::`**: Flat module now uses nested namespace structure
+  - Before: `r::AUTH_ERRORS_INVALID_CREDENTIALS`
+  - After: `r::auth::errors::INVALID_CREDENTIALS` (much more readable!)
+  - Matches Kotlin/Android `R.string.auth.title` pattern
+  - Resources at root level: `r::APP_NAME`, `r::MAX_RETRIES`
+  - Namespaced resources: `r::auth::TITLE`, `r::ui::colors::PRIMARY`
+
+### Changed
+- Flat module `r::` now generates nested modules instead of flat aliases
+- Structure reflects XML namespace hierarchy
+- More intuitive and easier to navigate
+- Better autocomplete support in IDEs
+
+### Technical
+- Refactored `flat.rs` to build namespace tree structure
+- Nested module generation matches type-organized modules
+- All tests updated to demonstrate new syntax
+
 ## [0.6.0] - 2025-11-05
 
 ### Added
