@@ -7,6 +7,34 @@ pub mod basic;
 pub mod advanced;
 
 pub mod arrays;
+pub mod templates;
+
+/// Parser state for tracking XML parsing context
+struct ParserState {
+    current_tag: String,
+    current_name: String,
+    current_profile: Option<String>,
+    array_items: Vec<String>,
+    in_array: bool,
+    namespace_stack: Vec<String>,
+    template_state: templates::TemplateState,
+    in_template: bool,
+}
+
+impl ParserState {
+    fn new() -> Self {
+        Self {
+            current_tag: String::new(),
+            current_name: String::new(),
+            current_profile: None,
+            array_items: Vec::new(),
+            in_array: false,
+            namespace_stack: Vec::new(),
+            template_state: templates::TemplateState::new(),
+            in_template: false,
+        }
+    }
+}
 
 /// Parses an XML resources file and extracts all resource definitions.
 pub fn parse_resources(xml: &str) -> Result<HashMap<String, Vec<(String, ResourceValue)>>, String> {
@@ -15,43 +43,14 @@ pub fn parse_resources(xml: &str) -> Result<HashMap<String, Vec<(String, Resourc
 
     let mut resources: HashMap<String, Vec<(String, ResourceValue)>> = HashMap::new();
     let mut buf = Vec::new();
-
-    let mut current_tag = String::new();
-    let mut current_name = String::new();
-    let mut current_profile: Option<String> = None;
-    let mut array_items: Vec<String> = Vec::new();
-    let mut in_array = false;
-    let mut namespace_stack: Vec<String> = Vec::new();
+    let mut state = ParserState::new();
 
     loop {
         match reader.read_event_into(&mut buf) {
-            Ok(Event::Start(e)) => on_start(
-                &e,
-                &mut current_tag,
-                &mut current_name,
-                &mut current_profile,
-                &mut in_array,
-                &mut array_items,
-                &mut namespace_stack,
-            ),
-            Ok(Event::Text(e)) => on_text(
-                &e,
-                &mut reader,
-                &current_tag,
-                &current_name,
-                in_array,
-                &mut array_items,
-                &mut resources,
-            ),
-            Ok(Event::End(e)) => on_end(
-                &e,
-                &mut current_tag,
-                &current_name,
-                &mut in_array,
-                &mut array_items,
-                &mut resources,
-                &mut namespace_stack,
-            ),
+            Ok(Event::Start(e)) => handle_start_event(&e, &mut state, &mut resources),
+            Ok(Event::Empty(e)) => handle_empty_event(&e, &mut state),
+            Ok(Event::Text(e)) => handle_text_event(&e, &mut state, &mut resources),
+            Ok(Event::End(e)) => handle_end_event(&e, &mut state, &mut resources),
             Ok(Event::Eof) => break,
             Err(e) => {
                 return Err(format!(
@@ -68,28 +67,28 @@ pub fn parse_resources(xml: &str) -> Result<HashMap<String, Vec<(String, Resourc
     Ok(resources)
 }
 
-/// Handles XML start tags and extracts the name and profile attributes
-fn handle_start_tag(
+/// Handles XML Start events
+fn handle_start_event(
     e: &quick_xml::events::BytesStart,
-    current_tag: &mut String,
-    current_name: &mut String,
-    current_profile: &mut Option<String>,
-    in_array: &mut bool,
-    array_items: &mut Vec<String>,
-    namespace_stack: &mut Vec<String>,
+    state: &mut ParserState,
+    _resources: &mut HashMap<String, Vec<(String, ResourceValue)>>,
 ) {
     let tag_name = String::from_utf8_lossy(e.name().as_ref()).to_string();
-    current_tag.clone_from(&tag_name);
+    state.current_tag.clone_from(&tag_name);
 
-    // Extract attributes (do not clear current_name/profile to preserve array context)
+    // Extract attributes
     let mut name_attr: Option<String> = None;
+    let mut template_attr: Option<String> = None;
     for attr in e.attributes().flatten() {
         match attr.key.as_ref() {
             b"name" => {
                 name_attr = Some(String::from_utf8_lossy(&attr.value).to_string());
             }
             b"profile" => {
-                *current_profile = Some(String::from_utf8_lossy(&attr.value).to_string());
+                state.current_profile = Some(String::from_utf8_lossy(&attr.value).to_string());
+            }
+            b"template" => {
+                template_attr = Some(String::from_utf8_lossy(&attr.value).to_string());
             }
             _ => {}
         }
@@ -98,80 +97,77 @@ fn handle_start_tag(
     // Namespace handling: <ns name="..."> pushes a namespace level
     if tag_name == "ns" {
         if let Some(ns_name) = name_attr {
-            namespace_stack.push(ns_name);
+            state.namespace_stack.push(ns_name);
         }
-        // Do not treat <ns> as a resource-bearing tag
-        current_name.clear();
+        state.current_name.clear();
     } else if let Some(local_name) = name_attr {
         // Qualify resource name with namespace path if present
-        if namespace_stack.is_empty() {
-            *current_name = local_name;
+        if state.namespace_stack.is_empty() {
+            state.current_name = local_name;
         } else {
-            *current_name = format!("{}/{}", namespace_stack.join("/"), local_name);
+            state.current_name = format!("{}/{}", state.namespace_stack.join("/"), local_name);
         }
     }
 
     // Detect array types
     if tag_name.ends_with("-array") {
-        *in_array = true;
-        array_items.clear();
+        state.in_array = true;
+        state.array_items.clear();
+    }
+
+    // Handle template attribute on string tags
+    if tag_name == "string" {
+        if let Some(ref template_str) = template_attr {
+            state.in_template = true;
+            templates::handle_template_attribute(template_str, &mut state.template_state);
+        }
+    }
+
+    // Handle <param> tags within templates (non-empty tags)
+    if tag_name == "param" && state.in_template {
+        parse_param_attributes(e, &mut state.template_state);
     }
 }
 
-/// Wrapper for Start event
-fn on_start(
+/// Handles XML Empty events (self-closing tags like <param/>)
+/// Note: In quick_xml, Empty events use BytesStart, not a separate type
+fn handle_empty_event(
     e: &quick_xml::events::BytesStart,
-    current_tag: &mut String,
-    current_name: &mut String,
-    current_profile: &mut Option<String>,
-    in_array: &mut bool,
-    array_items: &mut Vec<String>,
-    namespace_stack: &mut Vec<String>,
+    state: &mut ParserState,
 ) {
-    handle_start_tag(
-        e,
-        current_tag,
-        current_name,
-        current_profile,
-        in_array,
-        array_items,
-        namespace_stack,
-    );
+    let tag_name = String::from_utf8_lossy(e.name().as_ref()).to_string();
+    if tag_name == "param" && state.in_template {
+        parse_param_attributes(e, &mut state.template_state);
+    }
 }
 
-/// Handles text content within XML tags
-fn handle_text_content(
-    text: String,
-    current_tag: &str,
-    current_name: &str,
-    in_array: bool,
-    array_items: &mut Vec<String>,
-    resources: &mut HashMap<String, Vec<(String, ResourceValue)>>,
+/// Parses attributes from a param tag (works for both Start and Empty events)
+fn parse_param_attributes(
+    e: &quick_xml::events::BytesStart,
+    template_state: &mut templates::TemplateState,
 ) {
-    if in_array && current_tag == "item" {
-        array_items.push(text);
-    } else if !current_name.is_empty() {
-        match current_tag {
-            "string" => basic::handle_string(&text, current_name, resources),
-            "int" => basic::handle_int(&text, current_name, resources),
-            "float" => basic::handle_float(&text, current_name, resources),
-            "bool" => basic::handle_bool(&text, current_name, resources),
-            "color" => advanced::handle_color(&text, current_name, resources),
-            "url" => advanced::handle_url(&text, current_name, resources),
-            "dimension" => advanced::handle_dimension(&text, current_name, resources),
+    let mut param_name: Option<String> = None;
+    let mut param_type: Option<String> = None;
+    for attr in e.attributes().flatten() {
+        match attr.key.as_ref() {
+            b"name" => {
+                param_name = Some(String::from_utf8_lossy(&attr.value).to_string());
+            }
+            b"type" => {
+                param_type = Some(String::from_utf8_lossy(&attr.value).to_string());
+            }
             _ => {}
         }
     }
+    if let (Some(name), Some(type_str)) = (param_name, param_type) {
+        templates::handle_param_tag(&name, &type_str, template_state);
+    }
 }
 
-/// Wrapper for Text event
-fn on_text(
+/// Handles XML Text events
+fn handle_text_event(
     e: &quick_xml::events::BytesText,
-    _reader: &mut Reader<&[u8]>,
-    current_tag: &str,
-    current_name: &str,
-    in_array: bool,
-    array_items: &mut Vec<String>,
+    state: &mut ParserState,
     resources: &mut HashMap<String, Vec<(String, ResourceValue)>>,
 ) {
     let text = String::from_utf8_lossy(e).trim().to_string();
@@ -179,45 +175,60 @@ fn on_text(
         return;
     }
 
-    handle_text_content(
-        text,
-        current_tag,
-        current_name,
-        in_array,
-        array_items,
-        resources,
-    );
+    if state.in_array && state.current_tag == "item" {
+        state.array_items.push(text);
+    } else if !state.current_name.is_empty() && !state.in_template {
+        // Don't process text content for templates (they use the template attribute)
+        match state.current_tag.as_str() {
+            "string" => basic::handle_string(&text, &state.current_name, resources),
+            "int" => basic::handle_int(&text, &state.current_name, resources),
+            "float" => basic::handle_float(&text, &state.current_name, resources),
+            "bool" => basic::handle_bool(&text, &state.current_name, resources),
+            "color" => advanced::handle_color(&text, &state.current_name, resources),
+            "url" => advanced::handle_url(&text, &state.current_name, resources),
+            "dimension" => advanced::handle_dimension(&text, &state.current_name, resources),
+            _ => {}
+        }
+    }
 }
 
-/// Wrapper for End event
-fn on_end(
+/// Handles XML End events
+fn handle_end_event(
     e: &quick_xml::events::BytesEnd,
-    current_tag: &mut String,
-    current_name: &str,
-    in_array: &mut bool,
-    array_items: &mut Vec<String>,
+    state: &mut ParserState,
     resources: &mut HashMap<String, Vec<(String, ResourceValue)>>,
-    namespace_stack: &mut Vec<String>,
 ) {
     let tag_name = String::from_utf8_lossy(e.name().as_ref()).to_string();
 
-    if tag_name.ends_with("-array") && *in_array {
+    if tag_name.ends_with("-array") && state.in_array {
         arrays::handle_array_end(
             &tag_name,
-            current_name,
-            array_items,
+            &state.current_name,
+            &state.array_items,
             resources,
         );
-        *in_array = false;
-        array_items.clear();
+        state.in_array = false;
+        state.array_items.clear();
+    }
+
+    // Handle template finalization on </string>
+    if tag_name == "string" && state.in_template {
+        if let Some(template_value) = templates::finalize_template(&state.template_state) {
+            resources
+                .entry("string".to_string())
+                .or_default()
+                .push((state.current_name.clone(), template_value));
+        }
+        state.template_state.reset();
+        state.in_template = false;
     }
 
     // Pop namespace level on </ns>
     if tag_name == "ns" {
-        namespace_stack.pop();
+        state.namespace_stack.pop();
     }
 
-    current_tag.clear();
+    state.current_tag.clear();
 }
 
 

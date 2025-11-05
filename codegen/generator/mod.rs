@@ -30,7 +30,7 @@ pub fn generate_code(resources: &HashMap<String, Vec<(String, ResourceValue)>>) 
 
     // Generate basic type modules
     if let Some(strings) = resources.get("string") {
-        code.push_str(&basic::generate_string_module(strings));
+        code.push_str(&basic::generate_string_module(strings, resources));
     }
 
     if let Some(ints) = resources.get("int") {

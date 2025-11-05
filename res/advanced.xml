@@ -8,8 +8,19 @@
     <string name="full_api_url">@string/base_url</string>
     <string name="app_title">@string/app_name</string>
     
-    <!-- TODO v0.4.0: Interpolation in strings -->
-    <!-- <string name="welcome_title">Welcome to @string/app_name!</string> -->
+    <!-- Interpolated strings (v0.6.0) -->
+    <string name="welcome_title">Welcome to @string/app_name!</string>
+    <string name="api_url_with_version">@string/base_url/@string/api_version</string>
+    
+    <!-- Template functions (v0.6.0) -->
+    <string name="greeting" template="Hello {name}, you have {count} messages!">
+        <param name="name" type="string"/>
+        <param name="count" type="int"/>
+    </string>
+    <string name="status" template="User {username} is {active}">
+        <param name="username" type="string"/>
+        <param name="active" type="bool"/>
+    </string>
     
     <!-- Colors with references -->
     <color name="accent">#FF5722</color>

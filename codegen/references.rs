@@ -14,10 +14,10 @@ pub fn resolve_reference_path(resource_type: &str, key: &str, use_crate_prefix: 
     let const_name = parts
         .pop()
         .map(|s| sanitize_identifier(s).to_uppercase())
-        .unwrap_or_else(|| "".to_string());
+        .unwrap_or_default();
     let module_path = parts
         .into_iter()
-        .map(|s| sanitize_identifier(s))
+        .map(sanitize_identifier)
         .collect::<Vec<String>>()
         .join("::");
 
@@ -40,22 +40,43 @@ pub fn validate_references(
 ) -> Vec<String> {
     let mut errors = Vec::new();
 
+    fn validate_single_reference(
+        resource_type: &str,
+        key: &str,
+        res_type: &str,
+        name: &str,
+        resources: &HashMap<String, Vec<(String, ResourceValue)>>,
+        errors: &mut Vec<String>,
+    ) {
+        // Check if the referenced resource exists
+        if let Some(target_resources) = resources.get(resource_type) {
+            let key_exists = target_resources.iter().any(|(n, _)| n == key);
+            if !key_exists {
+                errors.push(format!(
+                    "Unresolved reference in {res_type}.{name}: @{resource_type}/{key} does not exist"
+                ));
+            }
+        } else {
+            errors.push(format!(
+                "Invalid reference in {res_type}.{name}: resource type '{resource_type}' does not exist"
+            ));
+        }
+    }
+
     for (res_type, items) in resources {
         for (name, value) in items {
-            if let ResourceValue::Reference { resource_type, key } = value {
-                // Check if the referenced resource exists
-                if let Some(target_resources) = resources.get(resource_type) {
-                    let key_exists = target_resources.iter().any(|(n, _)| n == key);
-                    if !key_exists {
-                        errors.push(format!(
-                            "Unresolved reference in {res_type}.{name}: @{resource_type}/{key} does not exist"
-                        ));
-                    }
-                } else {
-                    errors.push(format!(
-                        "Invalid reference in {res_type}.{name}: resource type '{resource_type}' does not exist"
-                    ));
+            match value {
+                ResourceValue::Reference { resource_type, key } => {
+                    validate_single_reference(resource_type, key, res_type, name, resources, &mut errors);
                 }
+                ResourceValue::InterpolatedString(ref parts) => {
+                    for part in parts {
+                        if let super::types::InterpolationPart::Reference { resource_type, key } = part {
+                            validate_single_reference(resource_type, key, res_type, name, resources, &mut errors);
+                        }
+                    }
+                }
+                _ => {}
             }
         }
     }

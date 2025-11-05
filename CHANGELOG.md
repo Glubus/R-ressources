@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2025-11-05
+
+### Added
+- **String interpolation**: Support for interpolated strings with embedded references
+  - Strings like `"Welcome to @string/app_name!"` are resolved at build-time
+  - References are recursively resolved into final string literals
+  - No runtime concatenation - all resolved at compile time
+- **Template functions**: Generate reusable functions with typed parameters
+  - Define templates in XML: `<string name="greeting" template="Hello {name}, you have {count} messages!">`
+  - Parameters with types: `<param name="name" type="string"/>`, `<param name="count" type="int"/>`
+  - Generated as Rust functions: `string::greeting(name: &str, count: i64) -> String`
+  - Support for string, int, float, and bool parameter types
+- **Intelligent alias generation**: Flat module `r::` now uses minimal unique aliases
+  - Before: `r::AUTH_ERRORS_INVALID_CREDENTIALS`
+  - After: `r::INVALID_CREDENTIALS` (if unique)
+  - Automatically prefixes only when conflicts occur
+  - Much more readable and ergonomic
+
+### Changed
+- Flat module `r::` aliases are now optimized for readability
+- String interpolation uses build-time resolution instead of runtime macros
+- Template functions are not exported in `r::` (they're functions, not constants)
+
+### Technical
+- Parser detects `template` attribute and `<param>` children
+- Generator creates `format!()`-based functions for templates
+- Conflict detection algorithm for minimal alias generation
+- All string interpolation happens at build-time (zero runtime cost)
+- Comprehensive test coverage for interpolation and templates
+
+### Examples
+- `examples/v06_concat.rs`: Demonstrates string interpolation and template functions
+- `tests/v06_concat.rs`: Tests for interpolated strings and template generation
+
 ## [0.5.0] - 2025-11-05
 
 ### Added
