@@ -92,15 +92,15 @@ pub struct Color {
 }
 
 impl Color {
-    pub const fn new(r: u8, g: u8, b: u8, a: u8) -> Self { Self { r, g, b, a } }
-    pub const fn r(&self) -> u8 { self.r }
-    pub const fn g(&self) -> u8 { self.g }
-    pub const fn b(&self) -> u8 { self.b }
-    pub const fn a(&self) -> u8 { self.a }
-    pub const fn to_rgba_u32(&self) -> u32 {
+    #[must_use] pub const fn new(r: u8, g: u8, b: u8, a: u8) -> Self { Self { r, g, b, a } }
+    #[must_use] pub const fn r(&self) -> u8 { self.r }
+    #[must_use] pub const fn g(&self) -> u8 { self.g }
+    #[must_use] pub const fn b(&self) -> u8 { self.b }
+    #[must_use] pub const fn a(&self) -> u8 { self.a }
+    #[must_use] pub const fn to_rgba_u32(&self) -> u32 {
         ((self.a as u32) << 24) | ((self.r as u32) << 16) | ((self.g as u32) << 8) | (self.b as u32)
     }
-    pub const fn to_rgb_tuple(&self) -> (u8, u8, u8) { (self.r, self.g, self.b) }
+    #[must_use] pub const fn to_rgb_tuple(&self) -> (u8, u8, u8) { (self.r, self.g, self.b) }
 }
 
 /// Typed URL parts split at build-time.
@@ -112,12 +112,12 @@ pub struct UrlParts {
 }
 
 impl UrlParts {
-    pub const fn new(scheme: &'static str, host: &'static str, path: &'static str) -> Self {
+    #[must_use] pub const fn new(scheme: &'static str, host: &'static str, path: &'static str) -> Self {
         Self { scheme, host, path }
     }
-    pub const fn scheme(&self) -> &'static str { self.scheme }
-    pub const fn host(&self) -> &'static str { self.host }
-    pub const fn path(&self) -> &'static str { self.path }
+    #[must_use] pub const fn scheme(&self) -> &'static str { self.scheme }
+    #[must_use] pub const fn host(&self) -> &'static str { self.host }
+    #[must_use] pub const fn path(&self) -> &'static str { self.path }
 }
 
 /// 2D position.
@@ -128,13 +128,13 @@ pub struct Position {
 }
 
 impl Position {
-    pub const fn new(x: f64, y: f64) -> Self { Self { x, y } }
-    pub const fn x(&self) -> f64 { self.x }
-    pub const fn y(&self) -> f64 { self.y }
-    pub fn distance_to(&self, other: &Self) -> f64 {
+    #[must_use] pub const fn new(x: f64, y: f64) -> Self { Self { x, y } }
+    #[must_use] pub const fn x(&self) -> f64 { self.x }
+    #[must_use] pub const fn y(&self) -> f64 { self.y }
+    #[must_use] pub fn distance_to(&self, other: &Self) -> f64 {
         let dx = self.x - other.x;
         let dy = self.y - other.y;
-        (dx * dx + dy * dy).sqrt()
+        dx.hypot(dy)
     }
 }
 
@@ -146,9 +146,9 @@ pub struct LatLng {
 }
 
 impl LatLng {
-    pub const fn new(lat: f64, lng: f64) -> Self { Self { lat, lng } }
-    pub const fn lat(&self) -> f64 { self.lat }
-    pub const fn lng(&self) -> f64 { self.lng }
+    #[must_use] pub const fn new(lat: f64, lng: f64) -> Self { Self { lat, lng } }
+    #[must_use] pub const fn lat(&self) -> f64 { self.lat }
+    #[must_use] pub const fn lng(&self) -> f64 { self.lng }
 }
 
 /// Error types for resource operations

@@ -22,7 +22,13 @@ pub fn generate_r_module(resources: &HashMap<String, Vec<(String, ResourceValue)
     export_resources(&mut code, resources, "float_array");
 
     code.push_str("}\n");
-    code
+    // typed flat module
+    let mut typed = String::from("\n/// Flat access for typed resources via `r_t::RESOURCE_NAME`\npub mod r_t {\n");
+    export_resources(&mut typed, resources, "color_t");
+    export_resources(&mut typed, resources, "url_t");
+    typed.push_str("}\n");
+
+    code + &typed
 }
 
 /// Helper to export resources of a given type

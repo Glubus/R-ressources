@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2025-11-05
+
+### Added
+- Typed resource structs (preview): `Color`, `UrlParts`, `Position`, `LatLng`
+- New example: `examples/v04_typed.rs`
+- New tests: `tests/v04_typed.rs`
+
+### Changed
+- Internal parser/generator refactors to prepare v0.4 typed generation
+- Clippy strict cleanups across codegen and tests
+
+### Notes
+- Backward-compatible: existing `&'static str` constants remain. Typed constants generation from XML will land next.
+
 ## [0.2.1] - 2025-11-05
 
 ### Changed

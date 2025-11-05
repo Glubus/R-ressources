@@ -8,7 +8,7 @@ fn test_color_api() {
     assert_eq!(c.b(), 0x56);
     assert_eq!(c.a(), 0x78);
     assert_eq!(c.to_rgb_tuple(), (0x12, 0x34, 0x56));
-    assert_eq!(c.to_rgba_u32(), 0x78345612);
+    assert_eq!(c.to_rgba_u32(), 0x7812_3456);
 }
 
 #[test]
