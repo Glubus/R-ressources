@@ -19,9 +19,11 @@ pub fn load_all_resources(res_dir: &Path) -> Result<HashMap<String, Vec<(String,
         return Err("No XML files found in res/ directory".to_string());
     }
 
+    // Parse all XML files
     let mut all_resources: HashMap<String, Vec<(String, ResourceValue)>> = HashMap::new();
     // Track duplicates across files (per type + name)
     let mut seen: HashMap<String, std::collections::HashMap<String, String>> = HashMap::new(); // type -> (name -> file)
+    let mut parse_errors = Vec::new();
 
     for file_path in &xml_files {
         let content = fs::read_to_string(file_path)
@@ -56,9 +58,17 @@ pub fn load_all_resources(res_dir: &Path) -> Result<HashMap<String, Vec<(String,
                 }
             }
             Err(e) => {
-                eprintln!("Warning: Failed to parse {}: {e}", file_path.display());
+                parse_errors.push(format!("Failed to parse {}: {e}", file_path.display()));
             }
         }
+    }
+
+    // Report all parsing errors and fail if any occurred
+    if !parse_errors.is_empty() {
+        return Err(format!(
+            "Parsing errors encountered:\n  {}",
+            parse_errors.join("\n  ")
+        ));
     }
 
     if all_resources.is_empty() {

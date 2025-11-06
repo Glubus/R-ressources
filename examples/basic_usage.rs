@@ -1,4 +1,4 @@
-use r_ressources::{float, int, string, string_array, int_array, float_array, RError};
+use r_ressources::{float, int, string, string_array, int_array, float_array};
 
 fn main() {
     println!("=== R Resources Demo ===\n");
@@ -26,12 +26,4 @@ fn main() {
     println!("  Supported Languages: {:?}", string_array::SUPPORTED_LANGS);
     println!("  Fibonacci: {:?}", int_array::FIBONACCI);
     println!("  Prices: {:?}", float_array::PRICES);
-
-    // Error handling demo
-    println!("\nError Handling:");
-    let error = RError::ResourceNotFound {
-        resource_type: "string".to_string(),
-        key: "non_existent".to_string(),
-    };
-    println!("  Error: {error}");
 }

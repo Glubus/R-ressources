@@ -131,7 +131,12 @@ impl Position {
     #[must_use] pub const fn new(x: f64, y: f64) -> Self { Self { x, y } }
     #[must_use] pub const fn x(&self) -> f64 { self.x }
     #[must_use] pub const fn y(&self) -> f64 { self.y }
-    #[must_use] pub fn distance_to(&self, other: &Self) -> f64 {
+    /// Calculates the Euclidean distance to another position.
+    ///
+    /// This method is not `const` because it uses `f64::hypot()` which performs
+    /// floating-point operations (including `sqrt`) that are not available in const contexts.
+    #[must_use]
+    pub fn distance_to(&self, other: &Self) -> f64 {
         let dx = self.x - other.x;
         let dy = self.y - other.y;
         dx.hypot(dy)
@@ -151,61 +156,4 @@ impl LatLng {
     #[must_use] pub const fn lng(&self) -> f64 { self.lng }
 }
 
-/// Error types for resource operations
-///
-/// This enum represents all possible errors that can occur when working with resources.
-/// Currently, errors are primarily used for validation and future extensibility.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum RError {
-    /// The requested resource does not exist
-    ///
-    /// Contains the resource type (e.g., "string") and the key that was not found
-    ResourceNotFound {
-        /// The type of resource that was requested (e.g., "string", "int")
-        resource_type: String,
-        /// The key that was not found
-        key: String,
-    },
-    /// The resource file is invalid or cannot be parsed
-    ///
-    /// Contains the path to the file and the reason it's invalid
-    InvalidResourceFile {
-        /// Path to the invalid resource file
-        path: String,
-        /// Description of why the file is invalid
-        reason: String,
-    },
-    /// A type mismatch occurred when accessing a resource
-    ///
-    /// Contains the expected type and the actual type found
-    TypeMismatch {
-        /// The type that was expected
-        expected: String,
-        /// The type that was actually found
-        found: String,
-    },
-}
-
-impl std::fmt::Display for RError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::ResourceNotFound { resource_type, key } => {
-                write!(f, "Resource not found: {resource_type}.{key}")
-            }
-            Self::InvalidResourceFile { path, reason } => {
-                write!(f, "Invalid resource file '{path}': {reason}")
-            }
-            Self::TypeMismatch { expected, found } => {
-                write!(f, "Type mismatch: expected {expected}, found {found}")
-            }
-        }
-    }
-}
-
-impl std::error::Error for RError {}
-
-/// Result type for resource operations
-///
-/// This is a convenience type alias for `Result<T, RError>`.
-pub type RResult<T> = Result<T, RError>;
 

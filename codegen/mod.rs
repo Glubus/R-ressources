@@ -48,17 +48,19 @@ pub fn build() {
             // Validate references
             let ref_errors = references::validate_references(&resources);
             if !ref_errors.is_empty() {
+                eprintln!("error: Reference validation failed:");
                 for error in &ref_errors {
-                    eprintln!("warning: {error}");
+                    eprintln!("  {error}");
                 }
+                std::process::exit(1);
             }
             
             let code = generator::generate_code(&resources);
             write_generated_code(&code);
         }
         Err(e) => {
-            eprintln!("Error loading resources: {e}");
-            write_generated_code(&generator::generate_empty_code());
+            eprintln!("error: Failed to load resources: {e}");
+            std::process::exit(1);
         }
     }
 }
