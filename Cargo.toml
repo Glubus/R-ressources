@@ -1,6 +1,6 @@
 [package]
 name = "r-resources"
-version = "0.7.6"
+version = "0.8.0"
 edition = "2021"
 description = "Android-style resource management for Rust - compile-time type-safe resource access"
 license = "MIT OR Apache-2.0"
@@ -13,6 +13,8 @@ readme = "README.md"
 [dependencies]
 tempfile = "3.8"
 quick-xml = "0.38"
+bigdecimal = "0.4.9"
 
 [build-dependencies]
 quick-xml = "0.38"
+bigdecimal = "0.4.9"
