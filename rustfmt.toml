@@ -1,0 +1,82 @@
+# rustfmt configuration for the workspace
+# Documentation: https://rust-lang.github.io/rustfmt/
+# Note: Only stable features are enabled. Many advanced options require nightly Rust.
+
+#----------------------------------------------------------------------
+# BASIC FORMATTING
+#----------------------------------------------------------------------
+
+# Maximum line width before wrapping (default: 100)
+max_width = 70
+
+# Number of spaces for a tab (default: 4)
+tab_spaces = 4
+
+# Line ending style: "Unix" (LF) or "Windows" (CRLF)
+newline_style = "Unix"
+
+# Heuristics to decide when to use compact formatting
+# Options: "Default", "Max", "Off"
+use_small_heuristics = "Default"
+
+#----------------------------------------------------------------------
+# SYNTAX SHORTHANDS
+#----------------------------------------------------------------------
+
+# Uses field initialization shorthand: Point { x, y } instead of Point { x: x, y: y }
+use_field_init_shorthand = true
+
+# Uses try shorthand: x? instead of try!(x)
+use_try_shorthand = true
+
+#----------------------------------------------------------------------
+# FUNCTION FORMATTING
+#----------------------------------------------------------------------
+
+# Forces explicit ABI in external function signatures
+force_explicit_abi = true
+
+#----------------------------------------------------------------------
+# IMPORT MANAGEMENT
+#----------------------------------------------------------------------
+
+# Reorders imports alphabetically
+reorder_imports = true
+
+# Reorders modules alphabetically
+reorder_modules = true
+
+#----------------------------------------------------------------------
+# OPTIMIZATIONS
+#----------------------------------------------------------------------
+
+# Removes unnecessary nested parentheses
+remove_nested_parens = true
+
+#----------------------------------------------------------------------
+# NOTES
+#----------------------------------------------------------------------
+# The following options are only available in nightly Rust and have been removed:
+# - format_code_in_doc_comments
+# - format_strings
+# - format_macro_matchers
+# - format_macro_bodies
+# - format_macro_definitions
+# - format_generated_files
+# - empty_item_single_line
+# - struct_lit_single_line
+# - fn_single_line
+# - where_single_line
+# - imports_granularity
+# - group_imports
+# - reorder_impl_items
+# - type_punctuation_density
+# - space_before_colon
+# - space_after_colon
+# - spaces_around_ranges
+# - binop_separator
+# - combine_control_expr
+# - normalize_comments
+# - normalize_doc_attributes
+# - overflow_doc_comments
+# - license_template_path
