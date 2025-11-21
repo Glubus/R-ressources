@@ -12,7 +12,7 @@ use crate::generator::ir::{
 };
 use crate::generator::parsing::ParsedResource;
 
-/// Trait que chaque type de ressource doit implémenter
+/// Trait that each resource type must implement
 pub trait ResourceType: Send + Sync {
     /// Type name (e.g., "string", "number", "bool")
     fn name(&self) -> &'static str;
