@@ -6,6 +6,7 @@ mod bool;
 mod color;
 mod number;
 mod string;
+mod template;
 
 use crate::generator::ir::{
     ResourceKey, ResourceNode, ResourceOrigin,
@@ -91,6 +92,7 @@ impl Default for TypeRegistry {
         registry.register(Box::new(number::NumberTypeHandler));
         registry.register(Box::new(bool::BoolType));
         registry.register(Box::new(color::ColorType));
+        registry.register(Box::new(template::TemplateType));
         registry
     }
 }

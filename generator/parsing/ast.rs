@@ -70,7 +70,8 @@ pub enum ResourceKind {
     Number,
     Bool,
     Color,
-    // TODO: array, template, etc.
+    Template,
+    // TODO: array, etc.
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -82,6 +83,16 @@ pub enum ScalarValue {
     },
     Bool(bool),
     Color(String),
+    Template {
+        text: String,
+        params: Vec<TemplateParam>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateParam {
+    pub name: String,
+    pub value: ScalarValue, // Use ScalarValue to represent the parameter (reuses existing parsing logic)
 }
 
 impl ScalarValue {
@@ -92,6 +103,7 @@ impl ScalarValue {
             Self::Number { value, .. } => Some(value.as_str()),
             Self::Bool(_) => None,
             Self::Color(_) => None,
+            Self::Template { text, .. } => Some(text.as_str()),
         }
     }
 

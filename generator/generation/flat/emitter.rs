@@ -46,7 +46,7 @@ pub fn generate_r_module(
         duplicate_info: &duplicate_info,
     };
 
-    let mut code = String::from("\npub mod r {\n");
+    let mut code = String::from("\npub mod r {\n    use std::str::FromStr;\n");
     emit_namespace_tree(&mut code, &tree, &ctx, 4);
     code.push_str("}\n");
     code

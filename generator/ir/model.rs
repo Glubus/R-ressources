@@ -155,7 +155,25 @@ pub enum ResourceValue {
     Number(NumberValue),
     Bool(bool),
     Color(String),
-    // TODO: add arrays, templates, references, etc.
+    Template {
+        text: String,
+        params: Vec<TemplateParam>,
+    },
+    // TODO: add arrays, references, etc.
+}
+
+#[derive(Debug, Clone)]
+pub struct TemplateParam {
+    pub name: String,
+    pub value: TemplateParamValue, // Store parameter type information
+}
+
+#[derive(Debug, Clone)]
+pub enum TemplateParamValue {
+    String,
+    Number { explicit_type: Option<String> }, // Store explicit_type for numbers (e.g., "bigdecimal", "i32")
+    Bool,
+    Color,
 }
 
 #[derive(Debug, Clone)]
@@ -174,6 +192,422 @@ impl ResourceOrigin {
             line: None,
             profile: None,
             is_test,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Tests for ResourceGraph
+    #[test]
+    fn graph_default_is_empty() {
+        let graph = ResourceGraph::default();
+        assert_eq!(graph.nodes().len(), 0);
+    }
+
+    #[test]
+    fn graph_insert_single_node() {
+        let mut graph = ResourceGraph::default();
+        let key = ResourceKey::new(vec![], "test");
+        let node = ResourceNode {
+            kind: ResourceKind::String,
+            value: ResourceValue::String("value".to_string()),
+            origin: ResourceOrigin::new(PathBuf::from("test.xml"), false),
+        };
+
+        let is_duplicate = graph.insert(key.clone(), node);
+        assert!(!is_duplicate);
+        assert_eq!(graph.nodes().len(), 1);
+        assert!(graph.get(&key).is_some());
+    }
+
+    #[test]
+    fn graph_insert_detects_duplicate() {
+        let mut graph = ResourceGraph::default();
+        let key = ResourceKey::new(vec![], "test");
+        let node1 = ResourceNode {
+            kind: ResourceKind::String,
+            value: ResourceValue::String("first".to_string()),
+            origin: ResourceOrigin::new(PathBuf::from("test1.xml"), false),
+        };
+        let node2 = ResourceNode {
+            kind: ResourceKind::String,
+            value: ResourceValue::String("second".to_string()),
+            origin: ResourceOrigin::new(PathBuf::from("test2.xml"), false),
+        };
+
+        let is_dup1 = graph.insert(key.clone(), node1);
+        assert!(!is_dup1);
+
+        let is_dup2 = graph.insert(key.clone(), node2);
+        assert!(is_dup2);
+        assert_eq!(graph.nodes().len(), 1);
+    }
+
+    #[test]
+    fn graph_get_returns_first_node() {
+        let mut graph = ResourceGraph::default();
+        let key = ResourceKey::new(vec![], "test");
+        let node1 = ResourceNode {
+            kind: ResourceKind::String,
+            value: ResourceValue::String("first".to_string()),
+            origin: ResourceOrigin::new(PathBuf::from("test1.xml"), false),
+        };
+        let node2 = ResourceNode {
+            kind: ResourceKind::String,
+            value: ResourceValue::String("second".to_string()),
+            origin: ResourceOrigin::new(PathBuf::from("test2.xml"), false),
+        };
+
+        graph.insert(key.clone(), node1);
+        graph.insert(key.clone(), node2);
+
+        let first = graph.get(&key).expect("node exists");
+        match &first.value {
+            ResourceValue::String(value) => assert_eq!(value, "first"),
+            _ => panic!("expected String"),
+        }
+    }
+
+    #[test]
+    fn graph_get_all_returns_all_nodes() {
+        let mut graph = ResourceGraph::default();
+        let key = ResourceKey::new(vec![], "test");
+        let node1 = ResourceNode {
+            kind: ResourceKind::String,
+            value: ResourceValue::String("first".to_string()),
+            origin: ResourceOrigin::new(PathBuf::from("test1.xml"), false),
+        };
+        let node2 = ResourceNode {
+            kind: ResourceKind::String,
+            value: ResourceValue::String("second".to_string()),
+            origin: ResourceOrigin::new(PathBuf::from("test2.xml"), false),
+        };
+
+        graph.insert(key.clone(), node1);
+        graph.insert(key.clone(), node2);
+
+        let all = graph.get_all(&key).expect("nodes exist");
+        assert_eq!(all.len(), 2);
+        match &all[0].value {
+            ResourceValue::String(value) => assert_eq!(value, "first"),
+            _ => panic!("expected String"),
+        }
+        match &all[1].value {
+            ResourceValue::String(value) => assert_eq!(value, "second"),
+            _ => panic!("expected String"),
+        }
+    }
+
+    #[test]
+    fn graph_has_duplicates() {
+        let mut graph = ResourceGraph::default();
+        let key = ResourceKey::new(vec![], "test");
+        let node1 = ResourceNode {
+            kind: ResourceKind::String,
+            value: ResourceValue::String("first".to_string()),
+            origin: ResourceOrigin::new(PathBuf::from("test1.xml"), false),
+        };
+        let node2 = ResourceNode {
+            kind: ResourceKind::String,
+            value: ResourceValue::String("second".to_string()),
+            origin: ResourceOrigin::new(PathBuf::from("test2.xml"), false),
+        };
+
+        graph.insert(key.clone(), node1);
+        assert!(!graph.has_duplicates(&key));
+
+        graph.insert(key.clone(), node2);
+        assert!(graph.has_duplicates(&key));
+    }
+
+    #[test]
+    fn graph_get_nonexistent_key() {
+        let graph = ResourceGraph::default();
+        let key = ResourceKey::new(vec![], "nonexistent");
+        assert!(graph.get(&key).is_none());
+    }
+
+    #[test]
+    fn graph_get_all_nonexistent_key() {
+        let graph = ResourceGraph::default();
+        let key = ResourceKey::new(vec![], "nonexistent");
+        assert!(graph.get_all(&key).is_none());
+    }
+
+    // Tests for ResourceKey
+    #[test]
+    fn resource_key_new() {
+        let key = ResourceKey::new(vec!["ns1".to_string(), "ns2".to_string()], "name");
+        assert_eq!(key.namespace, vec!["ns1", "ns2"]);
+        assert_eq!(key.name, "name");
+    }
+
+    #[test]
+    fn resource_key_new_with_string() {
+        let key = ResourceKey::new(vec![], "name");
+        assert_eq!(key.namespace, Vec::<String>::new());
+        assert_eq!(key.name, "name");
+    }
+
+    #[test]
+    fn resource_key_from_path_simple() {
+        let key = ResourceKey::from_path("name");
+        assert_eq!(key.namespace, Vec::<String>::new());
+        assert_eq!(key.name, "name");
+    }
+
+    #[test]
+    fn resource_key_from_path_with_namespace() {
+        let key = ResourceKey::from_path("ns1/ns2/name");
+        assert_eq!(key.namespace, vec!["ns1", "ns2"]);
+        assert_eq!(key.name, "name");
+    }
+
+    #[test]
+    fn resource_key_from_path_single_namespace() {
+        let key = ResourceKey::from_path("ns/name");
+        assert_eq!(key.namespace, vec!["ns"]);
+        assert_eq!(key.name, "name");
+    }
+
+    #[test]
+    fn resource_key_from_path_with_empty_parts() {
+        let key = ResourceKey::from_path("//ns1///name//");
+        assert_eq!(key.namespace, vec!["ns1"]);
+        assert_eq!(key.name, "name");
+    }
+
+    #[test]
+    fn resource_key_from_path_empty() {
+        let key = ResourceKey::from_path("");
+        assert_eq!(key.namespace, Vec::<String>::new());
+        assert_eq!(key.name, "");
+    }
+
+    #[test]
+    fn resource_key_from_path_only_slashes() {
+        let key = ResourceKey::from_path("///");
+        assert_eq!(key.namespace, Vec::<String>::new());
+        assert_eq!(key.name, "");
+    }
+
+    #[test]
+    fn resource_key_full_name_no_namespace() {
+        let key = ResourceKey::new(vec![], "name");
+        assert_eq!(key.full_name(), "name");
+    }
+
+    #[test]
+    fn resource_key_full_name_with_namespace() {
+        let key = ResourceKey::new(vec!["ns1".to_string(), "ns2".to_string()], "name");
+        assert_eq!(key.full_name(), "ns1/ns2/name");
+    }
+
+    #[test]
+    fn resource_key_full_name_single_namespace() {
+        let key = ResourceKey::new(vec!["ns".to_string()], "name");
+        assert_eq!(key.full_name(), "ns/name");
+    }
+
+    #[test]
+    fn resource_key_equality() {
+        let key1 = ResourceKey::new(vec!["ns".to_string()], "name");
+        let key2 = ResourceKey::new(vec!["ns".to_string()], "name");
+        assert_eq!(key1, key2);
+    }
+
+    #[test]
+    fn resource_key_inequality() {
+        let key1 = ResourceKey::new(vec!["ns1".to_string()], "name");
+        let key2 = ResourceKey::new(vec!["ns2".to_string()], "name");
+        assert_ne!(key1, key2);
+    }
+
+    #[test]
+    fn resource_key_ordering() {
+        let key1 = ResourceKey::new(vec![], "a");
+        let key2 = ResourceKey::new(vec![], "b");
+        assert!(key1 < key2);
+    }
+
+    // Tests for NumberType
+    #[test]
+    fn number_type_as_str_i8() {
+        assert_eq!(NumberType::I8.as_str(), "i8");
+    }
+
+    #[test]
+    fn number_type_as_str_i16() {
+        assert_eq!(NumberType::I16.as_str(), "i16");
+    }
+
+    #[test]
+    fn number_type_as_str_i32() {
+        assert_eq!(NumberType::I32.as_str(), "i32");
+    }
+
+    #[test]
+    fn number_type_as_str_i64() {
+        assert_eq!(NumberType::I64.as_str(), "i64");
+    }
+
+    #[test]
+    fn number_type_as_str_u8() {
+        assert_eq!(NumberType::U8.as_str(), "u8");
+    }
+
+    #[test]
+    fn number_type_as_str_u16() {
+        assert_eq!(NumberType::U16.as_str(), "u16");
+    }
+
+    #[test]
+    fn number_type_as_str_u32() {
+        assert_eq!(NumberType::U32.as_str(), "u32");
+    }
+
+    #[test]
+    fn number_type_as_str_u64() {
+        assert_eq!(NumberType::U64.as_str(), "u64");
+    }
+
+    #[test]
+    fn number_type_as_str_f32() {
+        assert_eq!(NumberType::F32.as_str(), "f32");
+    }
+
+    #[test]
+    fn number_type_as_str_f64() {
+        assert_eq!(NumberType::F64.as_str(), "f64");
+    }
+
+    #[test]
+    fn number_type_equality() {
+        assert_eq!(NumberType::I32, NumberType::I32);
+        assert_ne!(NumberType::I32, NumberType::I64);
+    }
+
+    // Tests for ResourceOrigin
+    #[test]
+    fn resource_origin_new() {
+        let origin = ResourceOrigin::new(PathBuf::from("test.xml"), false);
+        assert_eq!(origin.file, PathBuf::from("test.xml"));
+        assert_eq!(origin.line, None);
+        assert_eq!(origin.profile, None);
+        assert!(!origin.is_test);
+    }
+
+    #[test]
+    fn resource_origin_new_test() {
+        let origin = ResourceOrigin::new(PathBuf::from("test.xml"), true);
+        assert!(origin.is_test);
+    }
+
+    // Tests for ResourceKind
+    #[test]
+    fn resource_kind_equality() {
+        assert_eq!(ResourceKind::String, ResourceKind::String);
+        assert_ne!(ResourceKind::String, ResourceKind::Number);
+    }
+
+    #[test]
+    fn resource_kind_array() {
+        let kind = ResourceKind::Array("string".to_string());
+        match kind {
+            ResourceKind::Array(ty) => assert_eq!(ty, "string"),
+            _ => panic!("expected Array"),
+        }
+    }
+
+    #[test]
+    fn resource_kind_custom() {
+        let kind = ResourceKind::Custom("my_type".to_string());
+        match kind {
+            ResourceKind::Custom(ty) => assert_eq!(ty, "my_type"),
+            _ => panic!("expected Custom"),
+        }
+    }
+
+    // Tests for ResourceValue
+    #[test]
+    fn resource_value_string() {
+        let value = ResourceValue::String("test".to_string());
+        match value {
+            ResourceValue::String(s) => assert_eq!(s, "test"),
+            _ => panic!("expected String"),
+        }
+    }
+
+    #[test]
+    fn resource_value_number() {
+        let value = ResourceValue::Number(NumberValue::Int(42));
+        match value {
+            ResourceValue::Number(NumberValue::Int(i)) => assert_eq!(i, 42),
+            _ => panic!("expected Number::Int"),
+        }
+    }
+
+    #[test]
+    fn resource_value_bool() {
+        let value = ResourceValue::Bool(true);
+        match value {
+            ResourceValue::Bool(b) => assert!(b),
+            _ => panic!("expected Bool"),
+        }
+    }
+
+    #[test]
+    fn resource_value_color() {
+        let value = ResourceValue::Color("#FF0000".to_string());
+        match value {
+            ResourceValue::Color(c) => assert_eq!(c, "#FF0000"),
+            _ => panic!("expected Color"),
+        }
+    }
+
+    // Tests for NumberValue
+    #[test]
+    fn number_value_int() {
+        let value = NumberValue::Int(42);
+        match value {
+            NumberValue::Int(i) => assert_eq!(i, 42),
+            _ => panic!("expected Int"),
+        }
+    }
+
+    #[test]
+    fn number_value_float() {
+        let value = NumberValue::Float(3.14);
+        match value {
+            NumberValue::Float(f) => assert!((f - 3.14).abs() < 0.0001),
+            _ => panic!("expected Float"),
+        }
+    }
+
+    #[test]
+    fn number_value_big_decimal() {
+        let value = NumberValue::BigDecimal("123.456".to_string());
+        match value {
+            NumberValue::BigDecimal(s) => assert_eq!(s, "123.456"),
+            _ => panic!("expected BigDecimal"),
+        }
+    }
+
+    #[test]
+    fn number_value_typed() {
+        let value = NumberValue::Typed {
+            literal: "127".to_string(),
+            ty: NumberType::I8,
+        };
+        match value {
+            NumberValue::Typed { literal, ty } => {
+                assert_eq!(literal, "127");
+                assert_eq!(ty, NumberType::I8);
+            }
+            _ => panic!("expected Typed"),
         }
     }
 }

@@ -27,12 +27,20 @@ pub(super) fn parse_single_file(
     loop {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(e)) => handle_start(&mut state, &e),
+            Ok(Event::Empty(e)) => {
+                // Handle self-closing tags like <param name="..." type="..."/>
+                handle_start(&mut state, &e);
+            }
             Ok(Event::Text(e)) => {
-                if let Some(res) = handle_text(&state, &e) {
+                if let Some(res) = handle_text(&mut state, &e) {
                     resources.push(res);
                 }
             }
-            Ok(Event::End(e)) => handle_end(&mut state, &e),
+            Ok(Event::End(e)) => {
+                if let Some(res) = handle_end(&mut state, &e) {
+                    resources.push(res);
+                }
+            }
             Ok(Event::Eof) => break,
             Err(err) => {
                 return Err(ParserError::Xml {
@@ -214,5 +222,89 @@ mod tests {
             .find(|r| r.name == "primary_alpha")
             .unwrap();
         assert_eq!(primary_alpha.value.as_color(), Some("#AAFF5722"));
+    }
+
+    #[test]
+    fn parse_template_with_params() {
+        let raw = RawResourceFile::new(
+            PathBuf::from("values.xml"),
+            r#"
+<resources>
+    <template name="welcome_message">
+        <string name="name"/>
+        <number name="count"/>
+        Welcome to {name}, you have {count} messages!
+    </template>
+</resources>
+"#
+            .into(),
+            false,
+        );
+
+        let file = parse_single_file(&raw).unwrap();
+        assert_eq!(file.resources.len(), 1);
+
+        let template = file
+            .resources
+            .iter()
+            .find(|r| r.name == "welcome_message")
+            .unwrap();
+        assert_eq!(
+            template.kind,
+            crate::generator::parsing::ResourceKind::Template
+        );
+        
+        if let crate::generator::parsing::ScalarValue::Template { text, params } = &template.value {
+            assert_eq!(text.trim(), "Welcome to {name}, you have {count} messages!");
+            assert_eq!(params.len(), 2);
+            assert_eq!(params[0].name, "name");
+            assert!(matches!(params[0].value, crate::generator::parsing::ScalarValue::Text(_)));
+            assert_eq!(params[1].name, "count");
+            if let crate::generator::parsing::ScalarValue::Number { explicit_type, .. } = &params[1].value {
+                assert_eq!(explicit_type, &None); // No explicit type in test
+            } else {
+                panic!("Expected Number value");
+            }
+        } else {
+            panic!("Expected Template value");
+        }
+    }
+
+    #[test]
+    fn parse_template_with_explicit_type() {
+        let raw = RawResourceFile::new(
+            PathBuf::from("values.xml"),
+            r#"
+<resources>
+    <template name="welcome_message">
+        <string name="name"/>
+        <number name="count" type="bigdecimal"/>
+        Welcome to {name}, you have {count} messages!
+    </template>
+</resources>
+"#
+            .into(),
+            false,
+        );
+
+        let file = parse_single_file(&raw).unwrap();
+        assert_eq!(file.resources.len(), 1);
+
+        let template = file
+            .resources
+            .iter()
+            .find(|r| r.name == "welcome_message")
+            .unwrap();
+        
+        if let crate::generator::parsing::ScalarValue::Template { params, .. } = &template.value {
+            assert_eq!(params.len(), 2);
+            if let crate::generator::parsing::ScalarValue::Number { explicit_type, .. } = &params[1].value {
+                assert_eq!(explicit_type, &Some("bigdecimal".to_string()));
+            } else {
+                panic!("Expected Number value with explicit_type");
+            }
+        } else {
+            panic!("Expected Template value");
+        }
     }
 }

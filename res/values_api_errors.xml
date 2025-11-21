@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- API Error Messages - French -->
+    <ns name="fr">
+        <ns name="api">
+            <ns name="error">
+                <string name="unauthorized">Non autorisé</string>
+                <string name="forbidden">Accès interdit</string>
+                <string name="not_found">Ressource non trouvée</string>
+                <string name="bad_request">Requête invalide</string>
+                <string name="internal_server_error">Erreur interne du serveur</string>
+                <string name="service_unavailable">Service indisponible</string>
+                <string name="timeout">Délai d'attente dépassé</string>
+                <string name="rate_limit_exceeded">Limite de débit dépassée</string>
+                <string name="validation_failed">Échec de la validation</string>
+                <string name="authentication_failed">Échec de l'authentification</string>
+                <string name="invalid_token">Token invalide</string>
+                <string name="token_expired">Token expiré</string>
+                <string name="insufficient_permissions">Permissions insuffisantes</string>
+                <string name="resource_conflict">Conflit de ressource</string>
+                <string name="database_error">Erreur de base de données</string>
+                <string name="network_error">Erreur réseau</string>
+                <string name="invalid_format">Format invalide</string>
+                <string name="missing_parameter">Paramètre manquant</string>
+                <string name="invalid_parameter">Paramètre invalide</string>
+                <string name="operation_failed">Opération échouée</string>
+            </ns>
+        </ns>
+    </ns>
+
+    <!-- API Error Messages - English -->
+    <ns name="en">
+        <ns name="api">
+            <ns name="error">
+                <string name="unauthorized">Unauthorized</string>
+                <string name="forbidden">Forbidden</string>
+                <string name="not_found">Resource not found</string>
+                <string name="bad_request">Bad request</string>
+                <string name="internal_server_error">Internal server error</string>
+                <string name="service_unavailable">Service unavailable</string>
+                <string name="timeout">Request timeout</string>
+                <string name="rate_limit_exceeded">Rate limit exceeded</string>
+                <string name="validation_failed">Validation failed</string>
+                <string name="authentication_failed">Authentication failed</string>
+                <string name="invalid_token">Invalid token</string>
+                <string name="token_expired">Token expired</string>
+                <string name="insufficient_permissions">Insufficient permissions</string>
+                <string name="resource_conflict">Resource conflict</string>
+                <string name="database_error">Database error</string>
+                <string name="network_error">Network error</string>
+                <string name="invalid_format">Invalid format</string>
+                <string name="missing_parameter">Missing parameter</string>
+                <string name="invalid_parameter">Invalid parameter</string>
+                <string name="operation_failed">Operation failed</string>
+            </ns>
+        </ns>
+    </ns>
+
+    <!-- API Error Codes -->
+    <ns name="api">
+        <ns name="error">
+            <number name="unauthorized_code">401</number>
+            <number name="forbidden_code">403</number>
+            <number name="not_found_code">404</number>
+            <number name="bad_request_code">400</number>
+            <number name="internal_server_error_code">500</number>
+            <number name="service_unavailable_code">503</number>
+            <number name="timeout_code">408</number>
+            <number name="rate_limit_exceeded_code">429</number>
+            <number name="validation_failed_code">422</number>
+            <number name="authentication_failed_code">401</number>
+            <number name="invalid_token_code">401</number>
+            <number name="token_expired_code">401</number>
+            <number name="insufficient_permissions_code">403</number>
+            <number name="resource_conflict_code">409</number>
+            <number name="database_error_code">500</number>
+            <number name="network_error_code">503</number>
+            <number name="invalid_format_code">400</number>
+            <number name="missing_parameter_code">400</number>
+            <number name="invalid_parameter_code">400</number>
+            <number name="operation_failed_code">500</number>
+        </ns>
+    </ns>
+
+    <!-- API Error Templates -->
+    <template name="error_with_details">
+        <string name="error_type"/>
+        <string name="message"/>
+        <number name="code" type="i32"/>
+        Error {error_type}: {message} (Code: {code})
+    </template>
+
+    <template name="validation_error">
+        <string name="field"/>
+        <string name="reason"/>
+        Validation failed for field '{field}': {reason}
+    </template>
+</resources>
+
