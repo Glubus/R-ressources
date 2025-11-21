@@ -35,8 +35,8 @@
 ///     pub const MAX_RETRIES: i64 = 3;
 /// }
 /// ```
-mod codegen;
+mod generator;
 
 fn main() {
-    codegen::build();
+    generator::build();
 }

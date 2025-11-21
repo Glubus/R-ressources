@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="test_only_message">This exists only in tests</string>
-    <number name="test_limit" type="i32">2147483647</number>
-    <number name="test_decimal">123.456</number>
-</resources>
-

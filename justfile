@@ -70,3 +70,6 @@ watch-clippy:
 install-dev:
     cargo install cargo-watch cargo-deny
 
+# run example files
+example file:
+    cargo run --example {{ file }}

@@ -9,6 +9,44 @@ A Rust library inspired by Android/Kotlin's `R` system for managing resources at
 
 **Stop scattering magic numbers across 12 files!** Centralize all your constants, strings, colors, and configuration in one place. Modify them quickly without hunting through your codebase.
 
+## What's New in v0.9.0
+
+### 🎉 Major Refactoring
+
+**v0.9.0** introduces a completely redesigned code generation pipeline with improved architecture, better error handling, and enhanced maintainability:
+
+- **✨ New Modular Architecture**: Complete rewrite with clear separation of concerns:
+  - `input/` - File discovery and preprocessing
+  - `parsing/` - XML parsing into AST
+  - `ir/` - Intermediate Representation (ResourceGraph)
+  - `analysis/` - Validations and error reporting
+  - `generation/` - Code generation from IR
+
+- **🔍 Duplicate Detection with Warnings**: 
+  - Automatically detects duplicate resource keys across multiple files
+  - Reports warnings showing which files contain duplicates
+  - Only the first occurrence is used (priority-based)
+  - Option to treat duplicates as errors via `R_RESOURCES_DUPLICATES_AS_ERRORS=1`
+
+- **📦 Modular Type System**: 
+  - Easy to add new resource types via the `ResourceType` trait
+  - Each type is self-contained in `ir/types/`
+  - See `ir/types/README.md` for adding custom types
+
+- **🧪 Better Testability**: 
+  - Each stage of the pipeline can be tested independently
+  - Clear interfaces between components
+  - Comprehensive test coverage
+
+- **⚡ Improved Error Messages**: 
+  - Detailed error reporting at each stage
+  - Clear indication of file locations and context
+  - Structured warnings vs errors
+
+### Migration from v0.8.x
+
+The API remains **100% backward compatible**. No changes needed in your code! The refactoring is internal only.
+
 ## Features
 
 - **Build Time**: Resources are compiled directly into your binary
@@ -71,7 +109,7 @@ Need an exact Rust type? Add `type="..."` on the `<number>` tag:
 <number name="tax_rate" type="f32">0.20</number>
 ```
 
-Supported values: `i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64`, `f32`, `f64`, and `bigdecimal`. Literals are validated at build time so you’ll get a friendly error if something doesn’t fit.
+Supported values: `i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64`, `f32`, `f64`, and `bigdecimal`. Literals are validated at build time so you'll get a friendly error if something doesn't fit.
 
 ### Test-only resources (`r_tests::`)
 
@@ -102,7 +140,7 @@ fn smoke() {
 }
 ```
 
-By default, these resources are only compiled when `cargo test` runs (internally checking `CARGO_CFG_TEST`). To opt-in during other builds, set the env var `R_RESOURCES_INCLUDE_TESTS=1` or call `r_resources::build_with_options` with `tests_res_dir`.
+By default, these resources are only compiled when `cargo test` runs (internally checking `CARGO_CFG_TEST`). To opt-in during other builds, set the env var `R_RESOURCES_INCLUDE_TESTS=1` or call `r_resources::build_with_plan` with `tests_res_dir`.
 
 ## Installation
 
@@ -110,7 +148,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [build-dependencies]
-r-resources = "0.7.6"
+r-resources = "0.9.0"
 ```
 
 **Note**: `r-resources` is a build dependency, not a runtime dependency. It generates code at compile time. All XML files in the `res/` directory are automatically loaded and merged.
@@ -210,6 +248,40 @@ r::greeting("Alice", 5)  // "Hello Alice, you have 5 messages!"
 ```
 
 Supports `string`, `int`, `float`, and `bool` parameter types.
+
+### Duplicate Detection (v0.9.0+)
+
+When the same resource key is defined in multiple files, the system will:
+
+1. **Report a warning** showing all files where the key is defined
+2. **Use the first occurrence** (priority-based)
+3. **Annotate the generated code** with `#[deprecated]` to indicate the duplicate
+
+Example:
+```xml
+<!-- res/values1.xml -->
+<string name="title">First</string>
+
+<!-- res/values2.xml -->
+<string name="title">Second</string>
+```
+
+**Build output:**
+```
+warning: Duplicate resource key 'title' defined in 2 files. Using 'values1.xml' (first occurrence). Duplicates in: values2.xml
+```
+
+**Generated code:**
+```rust
+#[deprecated(note = "Duplicate resource key 'title' defined in multiple files")]
+#[allow(dead_code)] // WARNING: Duplicate resource - only first definition is used
+pub const TITLE: &str = "First";
+```
+
+To treat duplicates as errors instead of warnings:
+```bash
+R_RESOURCES_DUPLICATES_AS_ERRORS=1 cargo build
+```
 
 ### Multiple Resource Files
 

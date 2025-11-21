@@ -1,41 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Strings -->
-    <string name="app_name">My Awesome App</string>
-    <string name="welcome_message">Welcome to our app!</string>
-    <string name="error_network">Network error occurred</string>
-    
-    <!-- Numbers -->
-    <number name="max_retries" type="i32">3</number>
-    <number name="cache_size" type="u32">100</number>
-    <number name="default_rate">0.75</number>
-    <number name="tax_rate" type="f32">0.20</number>
-    <number name="version">1.5</number>
-    <number name="pi_precise">3.1415926535897932384626433832795</number>
-    <number name="huge_balance">123456789012345678901234567890123456789</number>
-    
-    <!-- String Arrays -->
-    <string-array name="supported_langs">
-        <item>en</item>
-        <item>fr</item>
-        <item>es</item>
-    </string-array>
-                                                                                                                                                                                                                        
-    <!-- Integer Arrays -->
-    <int-array name="fibonacci">
-        <item>1</item>
-        <item>1</item>
-        <item>2</item>
-        <item>3</item>
-        <item>5</item>
-        <item>8</item>
-    </int-array>
-    
-    <!-- Float Arrays -->
-    <float-array name="prices">
-        <item>9.99</item>
-        <item>19.99</item>
-        <item>29.99</item>
-    </float-array>
-</resources>
+    <string name="app_name">r-resources</string>
+    <number name="max_retries">3</number>
+    <number name="timeout_ms">5000</number>
+    <number name="rate">0.75</number>
+    <number name="tax_rate">0.20</number>
+    <bool name="debug_mode">true</bool>
 
+    <ns name="auth">
+        <string name="title">Login</string>
+        <string name="error_message">Invalid credentials</string>
+    </ns>
+</resources>

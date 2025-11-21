@@ -4,6 +4,83 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.9.0] - 2025-11-21
+
+### 🎉 Major Refactoring
+
+**Complete rewrite of the code generation pipeline** with improved architecture, better error handling, and enhanced maintainability.
+
+#### Added
+
+- **✨ New Modular Architecture**: Complete redesign with clear separation of concerns:
+  - `generator/input/` - File discovery, scanning, and profile preprocessing
+  - `generator/parsing/` - XML parsing into structured AST
+  - `generator/ir/` - Intermediate Representation (`ResourceGraph`) for unified resource model
+  - `generator/analysis/` - Validations and structured error reporting
+  - `generator/generation/` - Code generation from IR (with `flat/` submodule)
+
+- **🔍 Duplicate Detection with Warnings**:
+  - Automatically detects duplicate resource keys across multiple files
+  - Reports detailed warnings showing which files contain duplicates
+  - Only the first occurrence is used (priority-based resolution)
+  - Option to treat duplicates as errors via `R_RESOURCES_DUPLICATES_AS_ERRORS=1` environment variable
+  - Generated code annotated with `#[deprecated]` for duplicate resources
+
+- **📦 Modular Type System**:
+  - Easy to add new resource types via the `ResourceType` trait
+  - Each type is self-contained in `generator/ir/types/`
+  - See `generator/ir/types/README.md` for documentation on adding custom types
+  - Currently supports: `string`, `number`, `bool`, `color`
+
+- **🧪 Improved Testability**:
+  - Each stage of the pipeline can be tested independently
+  - Clear interfaces between components
+  - Comprehensive unit and integration tests
+
+- **⚡ Enhanced Error Messages**:
+  - Detailed error reporting at each stage (Loader, Parser, IR, Analysis, Generation)
+  - Clear indication of file locations and context
+  - Structured warnings vs errors with `AnalysisResult`
+
+- **🎨 Improved Color API**:
+  - Public fields `r`, `g`, `b`, `a` for direct access
+  - New methods: `.as_hex()`, `.as_rgb()`, `.as_u32()`
+  - Removed getter methods (`.r()`, `.g()`, `.b()`, `.a()`)
+  - Removed `to_rgba_u32()` and `to_rgb_tuple()` (replaced by `.as_u32()` and `.as_rgb()`)
+
+#### Changed
+
+- **Architecture**: Replaced monolithic `codegen/` with modular `generator/` system
+- **Error Handling**: Unified error types with proper error propagation through the pipeline
+- **Resource Graph**: New `ResourceGraph` IR stores all nodes (including duplicates) for better analysis
+- **Build System**: `build.rs` and `src/lib.rs` now use the new `generator` module
+- **Profile Preprocessing**: Moved from `codegen/environment` to `generator/input/loader/profile`
+
+#### Removed
+
+- **Legacy `codegen/` module**: Completely removed in favor of the new `generator/` architecture
+- **Old build pipeline**: Replaced with new staged pipeline (input → parsing → ir → analysis → generation)
+
+#### Technical Details
+
+- **Pipeline Stages**:
+  1. `input::load_resources()` - Discovers and loads XML files with profile filtering
+  2. `parsing::parse_raw_files()` - Parses XML into `ParsedResourceFile` AST
+  3. `ir::ResourceGraphBuilder` - Builds unified `ResourceGraph` from parsed files
+  4. `analysis::validate()` - Validates graph and reports warnings/errors
+  5. `generation::emit()` - Generates Rust code from validated graph
+
+- **Backward Compatibility**: API remains 100% compatible - no breaking changes for users
+
+### Migration Notes
+
+- **No code changes required**: The refactoring is internal only
+- **Same API**: `r_resources::build()` and `r_resources::include_resources!()` work exactly as before
+- **New advanced API**: `r_resources::build_with_plan()` for custom build configurations
+- **Module renamed**: Internal `codegen_v2` renamed to `generator` (not exposed in public API)
+
+## [0.8.0] - Previous versions
+
 ### Added
 - **Unified `<number>` resources**: a single XML tag now covers integers, floats, and huge literals
   - Whole numbers that fit in `i64` stay `i64`
@@ -18,7 +95,7 @@ All notable changes to this project will be documented in this file.
 - Generated code re-exports large numbers instead of duplicating constants, ensuring references always share the same storage
 - Documentation and examples now use `<number>` and mention the BigDecimal fallback
 
-## [0.7.6] - 2025-01-XX
+## [0.7.6] - 2025-11-06
 
 ### Fixed
 - **Float formatting**: Fixed issue where float values like `3.00` were incorrectly formatted as integers in generated code

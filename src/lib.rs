@@ -80,22 +80,28 @@
 
 // Reuse the same code generation pipeline as the build script so consumers can
 // call `r_resources::build()` from their own build.rs
-#[path = "../codegen/mod.rs"]
-mod codegen;
+#[path = "../generator/mod.rs"]
+pub mod generator;
 
 /// Runs the code generation. Intended to be called from a consumer's build.rs.
 ///
 /// It scans the consumer project's `res/` directory (using CARGO_MANIFEST_DIR)
 /// and writes generated code to its OUT_DIR.
 pub fn build() {
-    codegen::build();
+    generator::build();
 }
 
-pub use codegen::BuildOptions;
+/// Build plan for custom resource generation
+pub use generator::input::BuildPlan;
 
-/// Builds resources using custom options (for CLI or advanced setups).
-pub fn build_with_options(options: BuildOptions) {
-    codegen::build_with_options(&options);
+/// Builds resources using a custom build plan (for CLI or advanced setups).
+pub fn build_with_plan(
+    plan: &BuildPlan,
+) -> Result<
+    generator::generation::OutputArtifacts,
+    generator::BuildError,
+> {
+    generator::build_with_plan(plan)
 }
 
 /// Includes the generated resources from the build script.
@@ -122,10 +128,10 @@ pub use bigdecimal::BigDecimal;
 /// Typed color parsed from hex (e.g., `#RRGGBB` or `#AARRGGBB`).
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Color {
-    r: u8,
-    g: u8,
-    b: u8,
-    a: u8,
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+    pub a: u8,
 }
 
 impl Color {
@@ -133,29 +139,30 @@ impl Color {
     pub const fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self { r, g, b, a }
     }
+
+    /// Returns the color as a hex string (e.g., "#FF5722" or "#AAFF5722")
     #[must_use]
-    pub const fn r(&self) -> u8 {
-        self.r
+    pub fn as_hex(&self) -> String {
+        if self.a == 255 {
+            format!("#{:02X}{:02X}{:02X}", self.r, self.g, self.b)
+        } else {
+            format!("#{:02X}{:02X}{:02X}{:02X}", self.a, self.r, self.g, self.b)
+        }
     }
+
+    /// Returns the color as an RGB tuple (r, g, b)
     #[must_use]
-    pub const fn g(&self) -> u8 {
-        self.g
-    }
-    #[must_use]
-    pub const fn b(&self) -> u8 {
-        self.b
-    }
-    #[must_use]
-    pub const fn a(&self) -> u8 {
-        self.a
-    }
-    #[must_use]
-    pub const fn to_rgba_u32(&self) -> u32 {
-        ((self.a as u32) << 24) | ((self.r as u32) << 16) | ((self.g as u32) << 8) | (self.b as u32)
-    }
-    #[must_use]
-    pub const fn to_rgb_tuple(&self) -> (u8, u8, u8) {
+    pub const fn as_rgb(&self) -> (u8, u8, u8) {
         (self.r, self.g, self.b)
+    }
+
+    /// Returns the color as a u32 in ARGB format
+    #[must_use]
+    pub const fn as_u32(&self) -> u32 {
+        ((self.a as u32) << 24)
+            | ((self.r as u32) << 16)
+            | ((self.g as u32) << 8)
+            | (self.b as u32)
     }
 }
 
@@ -169,7 +176,11 @@ pub struct UrlParts {
 
 impl UrlParts {
     #[must_use]
-    pub const fn new(scheme: &'static str, host: &'static str, path: &'static str) -> Self {
+    pub const fn new(
+        scheme: &'static str,
+        host: &'static str,
+        path: &'static str,
+    ) -> Self {
         Self { scheme, host, path }
     }
     #[must_use]
