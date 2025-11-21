@@ -1,0 +1,98 @@
+# cargo-deny configuration for dependency checking
+# Install: cargo install cargo-deny
+# Usage: cargo deny check
+# Documentation: https://github.com/EmbarkStudios/cargo-deny
+
+# License checking configuration
+[licenses]
+# Allow or deny specific licenses
+allow = [
+    # Permissive licenses
+    "MIT",
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    # Dual-licensed
+    "MIT OR Apache-2.0",
+]
+
+# Deny these licenses
+deny = [
+    # GPL licenses (copyleft)
+    "GPL-2.0",
+    "GPL-2.0+",
+    "GPL-3.0",
+    "GPL-3.0+",
+    "AGPL-3.0",
+    "AGPL-3.0+",
+    # LGPL (less restrictive but still copyleft)
+    "LGPL-2.0",
+    "LGPL-2.0+",
+    "LGPL-2.1",
+    "LGPL-2.1+",
+    "LGPL-3.0",
+    "LGPL-3.0+",
+]
+
+# Unknown licenses are denied by default
+unlicensed = "deny"
+
+# Copyleft licenses (GPL, AGPL, LGPL) are denied by default
+copyleft = "deny"
+
+# Allow or deny licenses that are not explicitly listed
+default = "deny"
+
+# Exceptions for specific crates
+exceptions = [
+    # Example: Allow GPL for a specific crate
+    # { name = "some-crate", allow = ["GPL-3.0"] },
+]
+
+# Vulnerability checking
+[advisories]
+# Check for security vulnerabilities
+vulnerability = "deny"
+
+# Check for unmaintained crates (no updates in X days)
+unmaintained = "warn"
+days = 365
+
+# Check for yanked crates
+yanked = "deny"
+
+# Ignore specific advisories
+ignore = [
+    # Example: { id = "RUSTSEC-2020-0001", reason = "..." },
+]
+
+# Banned dependencies
+[bans]
+# Deny specific crates
+deny = [
+    # Example: { name = "bad-crate", reason = "Security issue" },
+]
+
+# Allow multiple versions of the same crate
+multiple-versions = "warn"
+
+# Allow duplicate dependencies
+duplicate = "warn"
+
+# Sources configuration
+[sources]
+# Allow or deny specific registries
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+deny-registry = []
+
+# Allow or deny git sources
+git = "allow"
+
+# Allow or deny path sources (local dependencies)
+path = "allow"
+
+# Allow or deny unknown sources
+unknown-registry = "deny"
+unknown-git = "deny"

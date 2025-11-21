@@ -1,30 +1,22 @@
 use r_resources::include_resources;
 include_resources!();
+use std::str::FromStr;
 
 fn main() {
     println!("=== R Resources Demo ===\n");
 
-    // Strings
-    println!("Strings:");
-    println!("  App Name: {}", string::APP_NAME);
-    println!("  Welcome: {}", string::WELCOME_MESSAGE);
-    println!("  Error: {}", string::ERROR_NETWORK);
+    println!("  App Name: {}", r::APP_NAME);
+    println!("  Max Retries: {}", r::MAX_RETRIES);
+    println!("  Timeout: {}ms", r::TIMEOUT_MS);
+    println!("  Rate: {}", r::RATE);
+    println!("  Tax Rate: {}%", r::TAX_RATE * 100.0);
+    println!("  Debug Mode: {}", r::DEBUG_MODE);
 
-    // Ints
-    println!("\nIntegers:");
-    println!("  Max Retries: {}", int::MAX_RETRIES);
-    println!("  Timeout: {}ms", int::TIMEOUT_MS);
-    println!("  Cache Size: {}", int::CACHE_SIZE);
+    println!("  Auth Title: {}", r::auth::TITLE);
+    println!("  Auth Error Message: {}", r::auth::error::CREDENTIALS);
+    println!("  Big Number: {:?}", r::BIG_NUMBER.to_string());
+    println!("  Auto Big Number: {:?}", r::AUTO_BIG_NUMBER.to_string());
+    println!("  Auto Big Decimal: {:?}", r::AUTO_BIG_DECIMAL.to_string());
 
-    // Floats
-    println!("\nFloats:");
-    println!("  Default Rate: {}", float::DEFAULT_RATE);
-    println!("  Tax Rate: {}%", float::TAX_RATE * 100.0);
-    println!("  Version: {}", float::VERSION);
-
-    // Arrays
-    println!("\nArrays:");
-    println!("  Supported Languages: {:?}", string_array::SUPPORTED_LANGS);
-    println!("  Fibonacci: {:?}", int_array::FIBONACCI);
-    println!("  Prices: {:?}", float_array::PRICES);
+    println!("  Welcome Message: {}", r::welcome_message("John", r_resources::BigDecimal::from_str("10").unwrap()));
 }

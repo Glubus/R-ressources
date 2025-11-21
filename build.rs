@@ -8,8 +8,9 @@
 ///
 /// Supported resource types:
 /// - `<string>`: String constants
-/// - `<int>`: Integer constants (i64)
-/// - `<float>`: Float constants (f64)
+/// - `<number>`: Numeric constants (auto-detected `i64`, `f64`, or `BigDecimal`)
+///     - Add `type="i32"`, `type="u32"`, `type="f32"`, etc. to force a specific Rust type
+/// - `<bool>`: Boolean constants
 /// - `<string-array>`: String array constants
 /// - `<int-array>`: Integer array constants
 /// - `<float-array>`: Float array constants
@@ -22,23 +23,20 @@
 /// <?xml version="1.0" encoding="utf-8"?>
 /// <resources>
 ///     <string name="app_name">My App</string>
-///     <int name="max_retries">3</int>
+///     <number name="max_retries">3</number>
 /// </resources>
 /// ```
 ///
 /// The build script generates:
 ///
 /// ```rust
-/// pub mod string {
+/// pub mod r {
 ///     pub const APP_NAME: &str = "My App";
-/// }
-///
-/// pub mod int {
 ///     pub const MAX_RETRIES: i64 = 3;
 /// }
 /// ```
-mod codegen;
+mod generator;
 
 fn main() {
-    codegen::build();
+    generator::build();
 }

@@ -1,41 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Strings -->
-    <string name="app_name">My Awesome App</string>
-    <string name="welcome_message">Welcome to our app!</string>
-    <string name="error_network">Network error occurred</string>
-    
-    <!-- Integers -->
-    <int name="max_retries">3</int>
-    <int name="cache_size">100</int>
-    
-    <!-- Floats -->
-    <float name="default_rate">0.75</float>
-    <float name="tax_rate">0.20</float>
-    <float name="version">1.5</float>
-    
-    <!-- String Arrays -->
-    <string-array name="supported_langs">
-        <item>en</item>
-        <item>fr</item>
-        <item>es</item>
-    </string-array>
-                                                                                                                                                                                                                        
-    <!-- Integer Arrays -->
-    <int-array name="fibonacci">
-        <item>1</item>
-        <item>1</item>
-        <item>2</item>
-        <item>3</item>
-        <item>5</item>
-        <item>8</item>
-    </int-array>
-    
-    <!-- Float Arrays -->
-    <float-array name="prices">
-        <item>9.99</item>
-        <item>19.99</item>
-        <item>29.99</item>
-    </float-array>
-</resources>
+    <string name="app_name">r-resources</string>
+    <number name="max_retries">3</number>
+    <number name="timeout_ms">5000</number>
+    <number name="rate">0.75</number>
+    <number name="tax_rate">0.20</number>
+    <bool name="debug_mode">true</bool>
 
+    <ns name="auth">
+        <string name="title">Login</string>
+        <ns name="error">
+            <string name="credentials">Invalid credentials</string>
+        </ns>
+    </ns>
+
+    <number name="auto_number">123456</number>
+    <number name="auto_number_with_decimal">123456.789</number>
+    <number name="big_number" type="bigdecimal">1234567890123456789012345678901234567890</number>
+    <number name="auto_big_number">12345678901234567890123456789012345678901234567890123456789012345678901234567890</number>
+    <number name="auto_big_decimal">31212120129092108928901289001982890120988902190812098.218128128191289012077198209812908</number>
+
+
+    <template name="welcome_message">
+        <string name="name"/>
+        <number name="count" type="bigdecimal"/>
+        Welcome to {name}, you have {count} messages!
+    </template>
+</resources>

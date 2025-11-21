@@ -1,0 +1,65 @@
+# Clippy configuration for the workspace
+# Documentation: https://rust-lang.github.io/rust-clippy/
+
+#----------------------------------------------------------------------
+# COMPLEXITY THRESHOLDS
+#----------------------------------------------------------------------
+
+# Cognitive complexity threshold (default: ~25)
+# Measures the difficulty of understanding a function
+cognitive-complexity-threshold = 30
+
+# Type complexity threshold (default: ~300)
+# Measures the complexity of type signatures
+type-complexity-threshold = 300
+
+#----------------------------------------------------------------------
+# SIZE LIMITS
+#----------------------------------------------------------------------
+
+# Maximum number of arguments in a function (default: 7)
+# Reduced to 5 for stricter enforcement
+too-many-arguments-threshold = 5
+
+# Maximum number of lines in a function (default: 3000)
+# Set to 50 to enforce shorter functions
+too-many-lines-threshold = 50
+
+# Maximum array size before warning (default: 2048)
+array-size-threshold = 1024
+
+#----------------------------------------------------------------------
+# SPECIFIC THRESHOLDS
+#----------------------------------------------------------------------
+
+# Threshold for enum variant names (default: varies)
+enum-variant-name-threshold = 3
+
+# Maximum nesting depth of functions (default: 4)
+excessive-nesting-threshold = 4
+
+# Maximum number of boolean fields in a struct (default: 3)
+max-struct-bools = 3
+
+# Maximum number of trait bounds (default: 3)
+max-trait-bounds = 3
+
+# Maximum stack frame size in bytes (default: 256)
+stack-size-threshold = 256
+
+#----------------------------------------------------------------------
+# DOCUMENTATION
+#----------------------------------------------------------------------
+
+# Verifies that identifiers in documentation are valid
+# Format: list of allowed patterns
+doc-valid-idents = []
+
+#----------------------------------------------------------------------
+# OTHER
+#----------------------------------------------------------------------
+
+# Minimum Supported Rust Version (MSRV)
+# Leave commented to use Clippy's default version
+# Example: msrv = "1.70.0"
+# msrv = ""

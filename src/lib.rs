@@ -14,8 +14,8 @@
 //! <?xml version="1.0" encoding="utf-8"?>
 //! <resources>
 //!     <string name="app_name">My Application</string>
-//!     <int name="max_retries">3</int>
-//!     <float name="version">1.0</float>
+//!     <number name="max_retries">3</number>
+//!     <number name="version">1.0</number>
 //! </resources>
 //! ```
 //!
@@ -24,12 +24,7 @@
 //! ```rust,ignore
 //! use r_resources::include_resources;
 //! include_resources!();
-//! use r_resources::*;
-//! // Option 1: Type-organized access
-//! let _ = string::APP_NAME;
-//! let _ = int::MAX_RETRIES;
-//! let _ = float::VERSION;
-//! // Option 2: Flat access via r module
+//! use r_resources::r;
 //! let _ = r::APP_NAME;
 //! let _ = r::MAX_RETRIES;
 //! let _ = r::VERSION;
@@ -37,21 +32,25 @@
 //!
 //! ## Supported Resource Types
 //!
-//! - **Strings**: `<string name="key">value</string>` → `string::KEY` or `r::KEY`
-//! - **Integers**: `<int name="key">42</int>` → `int::KEY` or `r::KEY`
-//! - **Floats**: `<float name="key">3.14</float>` → `float::KEY` or `r::KEY`
-//! - **String Arrays**: `<string-array name="key">...</string-array>` → `string_array::KEY` or `r::KEY`
-//! - **Integer Arrays**: `<int-array name="key">...</int-array>` → `int_array::KEY` or `r::KEY`
-//! - **Float Arrays**: `<float-array name="key">...</float-array>` → `float_array::KEY` or `r::KEY`
+//! - **Strings**: `<string name="key">value</string>` → `r::KEY`
+//! - **Numbers**: `<number name="key">value</number>` → `r::KEY` (auto-detected `i64`, `f64`, or `BigDecimal`)
+//! - **String Arrays**: `<string-array name="key">...</string-array>` → `r::KEY`
+//! - **Integer Arrays**: `<int-array name="key">...</int-array>` → `r::KEY`
+//! - **Float Arrays**: `<float-array name="key">...</float-array>` → `r::KEY`
 //!
-//! Both access methods are available:
-//! - Type-organized: `string::APP_NAME` (clearer, avoids naming conflicts)
-//! - Flat access: `r::APP_NAME` (shorter, more convenient)
+//! ### Forcing numeric types
+//!
+//! Add `type="..."` to a `<number>` tag to pick an exact Rust type (e.g., `i32`, `u32`, `f32`, `f64`, or `bigdecimal`). Literals are validated at build time.
+//!
+//! ### Test-only resources
+//!
+//! Put XML files under `res/tests/` to generate a `r_tests::` namespace automatically during `cargo test`.
+//! Set the environment variable `R_RESOURCES_INCLUDE_TESTS=1` or call [`build_with_options`] to include them in other builds.
 //!
 //! ## Features
 //!
 //! - **Build-time compilation**: All resources are compiled into your binary
-//! - **Type-safe**: Each resource type has its own module
+//! - **Type-safe**: Each resource becomes a strongly-typed constant
 //! - **Zero runtime cost**: Direct constant access, no parsing or lookups
 //! - **Thread-safe**: All resources are `const` and can be safely accessed from any thread
 //! - **Async-safe**: Works seamlessly in async contexts (tokio, async-std, etc.)
@@ -63,13 +62,13 @@
 //!
 //! ```rust,ignore
 //! use std::thread;
-//! use r_resources::*;
+//! use r_resources::r;
 //!
 //! let handles: Vec<_> = (0..10)
 //!     .map(|_| {
 //!         thread::spawn(|| {
 //!             // Safe to access from multiple threads
-//!             println!("{}", string::APP_NAME);
+//!             println!("{}", r::APP_NAME);
 //!         })
 //!     })
 //!     .collect();
@@ -81,15 +80,28 @@
 
 // Reuse the same code generation pipeline as the build script so consumers can
 // call `r_resources::build()` from their own build.rs
-#[path = "../codegen/mod.rs"]
-mod codegen;
+#[path = "../generator/mod.rs"]
+pub mod generator;
 
 /// Runs the code generation. Intended to be called from a consumer's build.rs.
 ///
 /// It scans the consumer project's `res/` directory (using CARGO_MANIFEST_DIR)
 /// and writes generated code to its OUT_DIR.
 pub fn build() {
-    codegen::build();
+    generator::build();
+}
+
+/// Build plan for custom resource generation
+pub use generator::input::BuildPlan;
+
+/// Builds resources using a custom build plan (for CLI or advanced setups).
+pub fn build_with_plan(
+    plan: &BuildPlan,
+) -> Result<
+    generator::generation::OutputArtifacts,
+    generator::BuildError,
+> {
+    generator::build_with_plan(plan)
 }
 
 /// Includes the generated resources from the build script.
@@ -111,13 +123,15 @@ macro_rules! include_resources {
     };
 }
 
+pub use bigdecimal::BigDecimal;
+
 /// Typed color parsed from hex (e.g., `#RRGGBB` or `#AARRGGBB`).
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Color {
-    r: u8,
-    g: u8,
-    b: u8,
-    a: u8,
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+    pub a: u8,
 }
 
 impl Color {
@@ -125,29 +139,30 @@ impl Color {
     pub const fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self { r, g, b, a }
     }
+
+    /// Returns the color as a hex string (e.g., "#FF5722" or "#AAFF5722")
     #[must_use]
-    pub const fn r(&self) -> u8 {
-        self.r
+    pub fn as_hex(&self) -> String {
+        if self.a == 255 {
+            format!("#{:02X}{:02X}{:02X}", self.r, self.g, self.b)
+        } else {
+            format!("#{:02X}{:02X}{:02X}{:02X}", self.a, self.r, self.g, self.b)
+        }
     }
+
+    /// Returns the color as an RGB tuple (r, g, b)
     #[must_use]
-    pub const fn g(&self) -> u8 {
-        self.g
-    }
-    #[must_use]
-    pub const fn b(&self) -> u8 {
-        self.b
-    }
-    #[must_use]
-    pub const fn a(&self) -> u8 {
-        self.a
-    }
-    #[must_use]
-    pub const fn to_rgba_u32(&self) -> u32 {
-        ((self.a as u32) << 24) | ((self.r as u32) << 16) | ((self.g as u32) << 8) | (self.b as u32)
-    }
-    #[must_use]
-    pub const fn to_rgb_tuple(&self) -> (u8, u8, u8) {
+    pub const fn as_rgb(&self) -> (u8, u8, u8) {
         (self.r, self.g, self.b)
+    }
+
+    /// Returns the color as a u32 in ARGB format
+    #[must_use]
+    pub const fn as_u32(&self) -> u32 {
+        ((self.a as u32) << 24)
+            | ((self.r as u32) << 16)
+            | ((self.g as u32) << 8)
+            | (self.b as u32)
     }
 }
 
@@ -161,7 +176,11 @@ pub struct UrlParts {
 
 impl UrlParts {
     #[must_use]
-    pub const fn new(scheme: &'static str, host: &'static str, path: &'static str) -> Self {
+    pub const fn new(
+        scheme: &'static str,
+        host: &'static str,
+        path: &'static str,
+    ) -> Self {
         Self { scheme, host, path }
     }
     #[must_use]
